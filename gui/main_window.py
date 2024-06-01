@@ -1,45 +1,73 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, Menu
 from gui.uniciclo_window import UnicicloWindow
 
 class MainWindow:
     def __init__(self, master):
         self.master = master
         self.master.title("Simulator RISC-V")
+        self.master.geometry("800x600")
         self.create_widgets()
+        self.create_menu()
 
     def create_widgets(self):
-        # Frame para el título
-        title_frame = tk.Frame(self.master, pady=10)
-        title_frame.pack()
-        title_label = tk.Label(title_frame, text="Simulator RISC-V", font=("Helvetica", 16, "bold"))
-        title_label.pack()
+        self.label = tk.Label(self.master, text="Simulator RISC-V", font=("Helvetica", 24))
+        self.label.pack(pady=20)
 
-        # Frame para las opciones de modo
-        mode_frame = tk.Frame(self.master, pady=10)
-        mode_frame.pack()
-        self.mode_label = tk.Label(mode_frame, text="Select Processor Mode:", font=("Helvetica", 12))
-        self.mode_label.pack(anchor='w')
+        self.frame = tk.Frame(self.master)
+        self.frame.pack(pady=10)
 
-        self.mode_var = tk.StringVar(value="uniciclo")
+        # Crear un Frame interno para alinear los botones verticalmente
+        self.button_frame = tk.Frame(self.frame)
+        self.button_frame.pack(pady=10)
 
-        modes = [("Uniciclo", "uniciclo"), ("Multiciclo", "multiciclo"), ("Segmentado", "segmentado")]
-        for text, mode in modes:
-            radio = tk.Radiobutton(mode_frame, text=text, variable=self.mode_var, value=mode, font=("Helvetica", 10))
-            radio.pack(anchor='w')
+        self.uniciclo_button = tk.Button(self.button_frame, text="Uniciclo", command=self.open_uniciclo, font=("Helvetica", 16))
+        self.uniciclo_button.pack(pady=5, padx=10)
 
-        # Frame para el botón de inicio
-        button_frame = tk.Frame(self.master, pady=10)
-        button_frame.pack()
-        self.start_button = tk.Button(button_frame, text="Start Simulation", command=self.open_simulation_window, font=("Helvetica", 12))
-        self.start_button.pack()
+        # Añadir botones para los otros procesadores
+        self.multiciclo_button = tk.Button(self.button_frame, text="Multiciclo", command=self.open_multiciclo, font=("Helvetica", 16))
+        self.multiciclo_button.pack(pady=5, padx=10)
 
-    def open_simulation_window(self):
-        mode = self.mode_var.get()
-        if mode == "uniciclo":
-            self.new_window(UnicicloWindow)
-        # Implementar las ventanas para los otros modos aquí
+        self.pipeline_button = tk.Button(self.button_frame, text="Pipeline", command=self.open_pipeline, font=("Helvetica", 16))
+        self.pipeline_button.pack(pady=5, padx=10)
 
-    def new_window(self, window_class):
-        self.new = tk.Toplevel(self.master)
-        window_class(self.new)
+        # Añadimos un botón para salir
+        self.exit_button = tk.Button(self.button_frame, text="Exit", command=self.master.quit, font=("Helvetica", 16))
+        self.exit_button.pack(pady=5, padx=10)
+
+    def create_menu(self):
+        self.menubar = Menu(self.master)
+        self.master.config(menu=self.menubar)
+
+        self.file_menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="File", menu=self.file_menu)
+        self.file_menu.add_command(label="Open", command=self.open_file)
+        self.file_menu.add_separator()
+        self.file_menu.add_command(label="Exit", command=self.master.quit)
+
+        self.help_menu = Menu(self.menubar, tearoff=0)
+        self.menubar.add_cascade(label="Help", menu=self.help_menu)
+        self.help_menu.add_command(label="About", command=self.show_about)
+
+    def open_uniciclo(self):
+        uniciclo_window = tk.Toplevel(self.master)
+        UnicicloWindow(uniciclo_window)
+
+    def open_multiciclo(self):
+        # Aquí puedes implementar la lógica para abrir la ventana de Multiciclo
+        pass
+
+    def open_pipeline(self):
+        # Aquí puedes implementar la lógica para abrir la ventana de Pipeline
+        pass
+
+    def open_file(self):
+        # Aquí puedes implementar la lógica para abrir un archivo
+        pass
+
+    def show_about(self):
+        about_window = tk.Toplevel(self.master)
+        about_window.title("About Simulator RISC-V")
+        about_window.geometry("400x300")
+        label = tk.Label(about_window, text="Simulator RISC-V\nVersion 1.0\nDeveloped by [Tu Nombre]", font=("Helvetica", 14), justify=tk.CENTER)
+        label.pack(expand=True, pady=20)
