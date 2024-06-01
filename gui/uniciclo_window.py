@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from processor.uniciclo import Uniciclo
 import time
 
@@ -12,32 +13,65 @@ class UnicicloWindow:
         self.execution_time = 0
 
     def create_widgets(self):
-        self.load_button = tk.Button(self.master, text="Load Program", command=self.load_program)
-        self.load_button.pack()
+        # Create a main frame
+        self.main_frame = tk.Frame(self.master, padx=10, pady=10)
+        self.main_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.run_button = tk.Button(self.master, text="Run Program", command=self.run_program)
-        self.run_button.pack()
+        # Add control buttons at the top
+        self.controls_frame = tk.Frame(self.main_frame)
+        self.controls_frame.pack(fill=tk.X, pady=5)
 
-        self.step_button = tk.Button(self.master, text="Step", command=self.step_program)
-        self.step_button.pack()
+        self.load_button = tk.Button(self.controls_frame, text="Load Program", command=self.load_program)
+        self.load_button.pack(side=tk.LEFT, padx=5)
 
-        self.cycle_label = tk.Label(self.master, text="Cycle: 0")
-        self.cycle_label.pack()
+        self.run_button = tk.Button(self.controls_frame, text="Run Program", command=self.run_program)
+        self.run_button.pack(side=tk.LEFT, padx=5)
 
-        self.time_label = tk.Label(self.master, text="Execution Time: 0.0s")
-        self.time_label.pack()
+        self.step_button = tk.Button(self.controls_frame, text="Step", command=self.step_program)
+        self.step_button.pack(side=tk.LEFT, padx=5)
 
-        self.pc_label = tk.Label(self.master, text="PC: 0x00000000")
-        self.pc_label.pack()
+        self.run_timed_button = tk.Button(self.controls_frame, text="Run Timed", command=self.run_timed_program)
+        self.run_timed_button.pack(side=tk.LEFT, padx=5)
 
-        self.registers_text = tk.Text(self.master, height=10, width=50)
-        self.registers_text.pack()
+        # Add status labels
+        self.status_frame = tk.Frame(self.main_frame)
+        self.status_frame.pack(fill=tk.X, pady=5)
 
-        self.memory_text = tk.Text(self.master, height=10, width=50)
-        self.memory_text.pack()
+        self.cycle_label = tk.Label(self.status_frame, text="Cycle: 0")
+        self.cycle_label.pack(side=tk.LEFT, padx=5)
 
-        self.output_text = tk.Text(self.master, height=10, width=80)
-        self.output_text.pack()
+        self.time_label = tk.Label(self.status_frame, text="Execution Time: 0.0s")
+        self.time_label.pack(side=tk.LEFT, padx=5)
+
+        self.pc_label = tk.Label(self.status_frame, text="PC: 0x00000000")
+        self.pc_label.pack(side=tk.LEFT, padx=5)
+
+        # Add a separator
+        separator = tk.Frame(self.main_frame, height=2, bd=1, relief=tk.SUNKEN)
+        separator.pack(fill=tk.X, pady=10)
+
+        # Create text areas for registers and memory with labels
+        self.data_frame = tk.Frame(self.main_frame)
+        self.data_frame.pack(fill=tk.BOTH, expand=True)
+
+        self.registers_label = tk.Label(self.data_frame, text="Registers", font=("Helvetica", 14))
+        self.registers_label.grid(row=0, column=0, padx=10, pady=5)
+
+        self.registers_text = tk.Text(self.data_frame, height=10, width=30)
+        self.registers_text.grid(row=1, column=0, padx=10, pady=5)
+
+        self.memory_label = tk.Label(self.data_frame, text="Memory", font=("Helvetica", 14))
+        self.memory_label.grid(row=0, column=1, padx=10, pady=5)
+
+        self.memory_text = tk.Text(self.data_frame, height=10, width=30)
+        self.memory_text.grid(row=1, column=1, padx=10, pady=5)
+
+        # Add output text area with a label
+        self.output_label = tk.Label(self.data_frame, text="Output", font=("Helvetica", 14))
+        self.output_label.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+
+        self.output_text = tk.Text(self.data_frame, height=10, width=80)
+        self.output_text.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
 
     def load_program(self):
         program = [
@@ -59,6 +93,19 @@ class UnicicloWindow:
         self.execution_time = time.time() - self.start_time
         self.update_ui()
         self.output_text.insert(tk.END, output)
+
+    def run_timed_program(self):
+        if self.start_time is None:
+            self.start_time = time.time()
+        self.master.after(1000, self.step_timed)
+
+    def step_timed(self):
+        output = self.uniciclo.step()
+        self.execution_time = time.time() - self.start_time
+        self.update_ui()
+        self.output_text.insert(tk.END, output)
+        if self.uniciclo.pc < len(self.uniciclo.memory):
+            self.master.after(1000, self.step_timed)
 
     def step_program(self):
         if self.start_time is None:
