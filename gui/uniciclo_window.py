@@ -75,16 +75,37 @@ class UnicicloWindow:
 
     def load_program(self):
         program = [
-            0x00000093,  # ADDI x1, x0, 0  -> x1 = 0
-            0x00100113,  # ADDI x2, x0, 1  -> x2 = 1
-            0x002081B3,  # ADD x3, x1, x2  -> x3 = x1 + x2 = 1
-            0x00420223,  # SW x4, 0(x4)    -> Mem[x4] = x4 (store x4 at address in x4)
-            0x00318063,  # BEQ x3, x3, 0   -> if x3 == x3, PC = PC + 4 (no-op)
-            0xFFF10113,  # ADDI x2, x2, -1 -> x2 = x2 - 1
-            0x00200193,  # ADDI x3, x0, 2  -> x3 = 2
+            0x00000293,  # lw x5, 0(x0)
+            0x00400313,  # lw x6, 4(x0)
+            0x00800393,  # lw x7, 8(x0)
+            0x00C00413,  # lw x8, 12(x0)
+            0x01000493,  # lw x9, 16(x0)
+            0x01400513,  # lw x10, 20(x0)
+            0x01800593,  # lw x11, 24(x0)
+            0x01C00613,  # lw x12, 28(x0)
+            0x00A286B3,  # mul x13, x5, x9
+            0x00B30733,  # mul x14, x6, x11
+            0x00E6E733,  # add x15, x13, x14
+            0x020007A3,  # sw x15, 32(x0)
+            0x00A287B3,  # mul x15, x5, x10
+            0x00B30833,  # mul x16, x6, x12
+            0x00F807B3,  # add x15, x15, x16
+            0x024007A3,  # sw x15, 36(x0)
+            0x00A287B3,  # mul x15, x7, x9
+            0x00B30833,  # mul x16, x8, x11
+            0x00F807B3,  # add x15, x15, x16
+            0x028007A3,  # sw x15, 40(x0)
+            0x00A287B3,  # mul x15, x7, x10
+            0x00B30833,  # mul x16, x8, x12
+            0x00F807B3,  # add x15, x15, x16
+            0x02C007A3,  # sw x15, 44(x0)
         ]
+        matrix_a = [1, 2, 3, 4]
+        matrix_b = [5, 6, 7, 8]
         self.uniciclo.load_program(program)
-        self.output_text.insert(tk.END, "Program loaded.\n")
+        self.uniciclo.load_matrices(matrix_a, matrix_b)
+        self.output_text.insert(tk.END, "Matrix multiplication program loaded.\n")
+
 
     def run_program(self):
         if self.start_time is None:
