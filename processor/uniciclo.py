@@ -1,19 +1,14 @@
 class Uniciclo:
     def __init__(self):
+        self.memory = bytearray(1024)  # 1KB of memory
         self.registers = [0] * 32
-        self.memory = bytearray(48)  # Ajustar tamaño de memoria según necesidad
         self.pc = 0
         self.cycle = 0
 
     def load_program(self, program):
-        for i, instr in enumerate(program):
-            self.memory[i * 4:i * 4 + 4] = instr.to_bytes(4, byteorder='little')
-
-    def load_matrices(self, matrix_a, matrix_b):
-        for i, val in enumerate(matrix_a):
-            self.memory[i * 4:i * 4 + 4] = val.to_bytes(4, byteorder='little')
-        for i, val in enumerate(matrix_b, 4):
-            self.memory[i * 4:i * 4 + 4] = val.to_bytes(4, byteorder='little')
+        self.pc = 0
+        for i, instruction in enumerate(program):
+            self.memory[i * 4:(i + 1) * 4] = instruction.to_bytes(4, byteorder='little')
 
     def run(self):
         output = ""
@@ -22,56 +17,32 @@ class Uniciclo:
         return output
 
     def step(self):
-        instruction = int.from_bytes(self.memory[self.pc:self.pc + 4], byteorder='little')
-        # Decodificar e implementar instrucciones...
-        # ...
+        instruction = int.from_bytes(self.memory[self.pc:self.pc+4], 'little')
         self.pc += 4
         self.cycle += 1
-        return f"Cycle {self.cycle}: PC = 0x{self.pc:08X}\n"
 
-# Programa de prueba
-program = [
-    0x00000293,  # lw x5, 0(x0)
-    0x00400313,  # lw x6, 4(x0)
-    0x00800393,  # lw x7, 8(x0)
-    0x00C00413,  # lw x8, 12(x0)
-    0x01000493,  # lw x9, 16(x0)
-    0x01400513,  # lw x10, 20(x0)
-    0x01800593,  # lw x11, 24(x0)
-    0x01C00613,  # lw x12, 28(x0)
-    0x00A286B3,  # mul x13, x5, x9
-    0x00B30733,  # mul x14, x6, x11
-    0x00E6E733,  # add x15, x13, x14
-    0x020007A3,  # sw x15, 32(x0)
-    0x00A287B3,  # mul x15, x5, x10
-    0x00B30833,  # mul x16, x6, x12
-    0x00F807B3,  # add x15, x15, x16
-    0x024007A3,  # sw x15, 36(x0)
-    0x00A287B3,  # mul x15, x7, x9
-    0x00B30833,  # mul x16, x8, x11
-    0x00F807B3,  # add x15, x15, x16
-    0x028007A3,  # sw x15, 40(x0)
-    0x00A287B3,  # mul x15, x7, x10
-    0x00B30833,  # mul x16, x8, x12
-    0x00F807B3,  # add x15, x15, x16
-    0x02C007A3,  # sw x15, 44(x0)
-]
+        opcode = instruction & 0x7F
+        rd = (instruction >> 7) & 0x1F
+        funct3 = (instruction >> 12) & 0x7
+        rs1 = (instruction >> 15) & 0x1F
+        rs2 = (instruction >> 20) & 0x1F
+        funct7 = (instruction >> 25) & 0x7F
 
-# Matrices de entrada
-matrix_a = [1, 2, 3, 4]
-matrix_b = [5, 6, 7, 8]
+        if opcode == 0x03 and funct3 == 0x2:  # lw
+            imm = instruction >> 20
+            address = self.registers[rs1] + imm
+            self.registers[rd] = int.from_bytes(self.memory[address:address+4], 'little')
+        elif opcode == 0x23 and funct3 == 0x2:  # sw
+            imm = ((instruction >> 25) << 5) | ((instruction >> 7) & 0x1F)
+            address = self.registers[rs1] + imm
+            self.memory[address:address+4] = self.registers[rs2].to_bytes(4, 'little')
+        elif opcode == 0x33:  # R-type (add, sub, mul)
+            if funct3 == 0x0:
+                if funct7 == 0x00:  # add
+                    self.registers[rd] = self.registers[rs1] + self.registers[rs2]
+                elif funct7 == 0x20:  # sub
+                    self.registers[rd] = self.registers[rs1] - self.registers[rs2]
+                elif funct7 == 0x01:  # mul
+                    self.registers[rd] = self.registers[rs1] * self.registers[rs2]
 
-# Instanciar y cargar el programa
-uniciclo = Uniciclo()
-uniciclo.load_program(program)
-uniciclo.load_matrices(matrix_a, matrix_b)
-
-# Ejecutar y ver resultados
-output = uniciclo.run()
-print(output)
-
-# Verificar resultado en memoria
-result = []
-for i in range(32, 48, 4):
-    result.append(int.from_bytes(uniciclo.memory[i:i + 4], byteorder='little'))
-print(f"Matrix C: {result}")
+        return f"PC: 0x{self.pc:08X}, Cycle: {self.cycle}, Instruction: 0x{instruction:08X}\n"
