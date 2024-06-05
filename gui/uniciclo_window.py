@@ -62,39 +62,20 @@ class UnicicloWindow:
         self.memory_text = tk.Text(self.data_frame, height=10, width=30)
         self.memory_text.grid(row=1, column=1, padx=10, pady=5)
 
+        self.assembly_label = tk.Label(self.data_frame, text="Assembly Code", font=("Helvetica", 14))
+        self.assembly_label.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+
+        self.assembly_text = tk.Text(self.data_frame, height=10, width=80)
+        self.assembly_text.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
+
         self.output_label = tk.Label(self.data_frame, text="Output", font=("Helvetica", 14))
-        self.output_label.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+        self.output_label.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
 
         self.output_text = tk.Text(self.data_frame, height=10, width=80)
-        self.output_text.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
+        self.output_text.grid(row=5, column=0, columnspan=2, padx=10, pady=5)
 
     def load_program(self):
-        assembly_code = """
-        lw x5, 0(x0)
-        lw x6, 4(x0)
-        lw x7, 8(x0)
-        lw x8, 12(x0)
-        lw x9, 16(x0)
-        lw x10, 20(x0)
-        lw x11, 24(x0)
-        lw x12, 28(x0)
-        mul x13, x5, x9
-        mul x14, x6, x11
-        add x15, x13, x14
-        sw x15, 32(x0)
-        mul x15, x5, x10
-        mul x16, x6, x12
-        add x15, x15, x16
-        sw x15, 36(x0)
-        mul x15, x7, x9
-        mul x16, x8, x11
-        add x15, x15, x16
-        sw x15, 40(x0)
-        mul x15, x7, x10
-        mul x16, x8, x12
-        add x15, x15, x16
-        sw x15, 44(x0)
-        """
+        assembly_code = self.assembly_text.get("1.0", tk.END)
         try:
             machine_code = self.assembler.assemble(assembly_code)
             self.uniciclo.load_program(machine_code)
@@ -105,10 +86,12 @@ class UnicicloWindow:
     def run_program(self):
         if self.start_time is None:
             self.start_time = time.time()
-        output = self.uniciclo.run()
-        self.execution_time = time.time() - self.start_time
-        self.update_ui()
-        self.output_text.insert(tk.END, output)
+        while self.uniciclo.pc < len(self.uniciclo.memory):
+            output = self.uniciclo.step()
+            self.execution_time = time.time() - self.start_time
+            self.update_ui()
+            self.output_text.insert(tk.END, output)
+        self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def run_timed_program(self):
         if self.start_time is None:
@@ -116,20 +99,25 @@ class UnicicloWindow:
         self.master.after(1000, self.step_timed)
 
     def step_timed(self):
-        output = self.uniciclo.step()
-        self.execution_time = time.time() - self.start_time
-        self.update_ui()
-        self.output_text.insert(tk.END, output)
         if self.uniciclo.pc < len(self.uniciclo.memory):
+            output = self.uniciclo.step()
+            self.execution_time = time.time() - self.start_time
+            self.update_ui()
+            self.output_text.insert(tk.END, output)
             self.master.after(1000, self.step_timed)
+        else:
+            self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def step_program(self):
         if self.start_time is None:
             self.start_time = time.time()
-        output = self.uniciclo.step()
-        self.execution_time = time.time() - self.start_time
-        self.update_ui()
-        self.output_text.insert(tk.END, output)
+        if self.uniciclo.pc < len(self.uniciclo.memory):
+            output = self.uniciclo.step()
+            self.execution_time = time.time() - self.start_time
+            self.update_ui()
+            self.output_text.insert(tk.END, output)
+        else:
+            self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def update_ui(self):
         self.cycle_label.config(text=f"Cycle: {self.uniciclo.cycle}")
