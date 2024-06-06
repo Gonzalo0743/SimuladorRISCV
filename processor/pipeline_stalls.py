@@ -23,7 +23,6 @@ class Segmentado_Stalls:
     def load_program(self, program):
         self.pc = 0
         for i, instruction in enumerate(program):
-            print()
             self.memory[i * 4:(i + 1) * 4] = instruction.to_bytes(4, byteorder='little')
 
     def run(self):

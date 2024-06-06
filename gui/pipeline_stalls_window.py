@@ -1,12 +1,12 @@
 import tkinter as tk
-from processor.pipeline_stalls import Segmentado_Stalls  # Importa el procesador segmentado en lugar del uniciclo
+from processor.pipeline_stalls import Segmentado_Stalls
 from processor.assembler import Assembler
 import time
 
 class Segmentado_Stalls_Window:
     def __init__(self, master):
         self.master = master
-        self.master.title("Segmentado con Stalls Simulator")
+        self.master.title("Segmentado Simulator")
         self.create_widgets()
         self.segmentado = Segmentado_Stalls()
         self.assembler = Assembler()
@@ -51,28 +51,35 @@ class Segmentado_Stalls_Window:
         self.data_frame.pack(fill=tk.BOTH, expand=True)
 
         self.registers_label = tk.Label(self.data_frame, text="Registers", font=("Helvetica", 14))
-        self.registers_label.grid(row=0, column=0, padx=10, pady=5)
+        self.registers_label.grid(row=0, column=0, padx=10, pady=5, sticky=tk.W)
 
         self.registers_text = tk.Text(self.data_frame, height=10, width=30)
-        self.registers_text.grid(row=1, column=0, padx=10, pady=5)
+        self.registers_text.grid(row=1, column=0, padx=10, pady=5, sticky=tk.W)
 
         self.memory_label = tk.Label(self.data_frame, text="Memory", font=("Helvetica", 14))
-        self.memory_label.grid(row=0, column=1, padx=10, pady=5)
+        self.memory_label.grid(row=0, column=1, padx=10, pady=5, sticky=tk.W)
 
         self.memory_text = tk.Text(self.data_frame, height=10, width=30)
-        self.memory_text.grid(row=1, column=1, padx=10, pady=5)
+        self.memory_text.grid(row=1, column=1, padx=10, pady=5, sticky=tk.W)
 
         self.assembly_label = tk.Label(self.data_frame, text="Assembly Code", font=("Helvetica", 14))
-        self.assembly_label.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+        self.assembly_label.grid(row=2, column=0, columnspan=2, padx=10, pady=5, sticky=tk.W)
 
         self.assembly_text = tk.Text(self.data_frame, height=10, width=80)
-        self.assembly_text.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
+        self.assembly_text.grid(row=3, column=0, columnspan=2, padx=10, pady=5, sticky=tk.W)
 
         self.output_label = tk.Label(self.data_frame, text="Output", font=("Helvetica", 14))
-        self.output_label.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
+        self.output_label.grid(row=4, column=0, columnspan=2, padx=10, pady=5, sticky=tk.W)
 
         self.output_text = tk.Text(self.data_frame, height=10, width=80)
-        self.output_text.grid(row=5, column=0, columnspan=2, padx=10, pady=5)
+        self.output_text.grid(row=5, column=0, columnspan=2, padx=10, pady=5, sticky=tk.W)
+
+        self.pipeline_label = tk.Label(self.data_frame, text="Ubicacion de instruccion en Pipeline", font=("Helvetica", 14))
+        self.pipeline_label.grid(row=0, column=3, padx=10, pady=5, sticky=tk.W)
+
+        self.pipeline_text = tk.Text(self.data_frame, height=10, width=30)
+        self.pipeline_text.grid(row=1, column=3, columnspan=3, padx=10, pady=5, sticky=tk.W)
+
 
     def load_program(self):
         assembly_code = self.assembly_text.get("1.0", tk.END)
@@ -126,16 +133,24 @@ class Segmentado_Stalls_Window:
         self.update_registers()
         self.update_memory()
 
+
     def update_registers(self):
         self.registers_text.delete('1.0', tk.END)
         for i in range(len(self.segmentado.registers)):
             self.registers_text.insert(tk.END, f"x{i}: 0x{self.segmentado.registers[i]:08X}\n")
+
 
     def update_memory(self):
         self.memory_text.delete('1.0', tk.END)
         for addr in range(0, len(self.segmentado.memory), 4):
             value = int.from_bytes(self.segmentado.memory[addr:addr+4], 'little')
             self.memory_text.insert(tk.END, f"0x{addr:08X}: 0x{value:08X}\n")
+
+    def update_pipeline(self):
+        self.pipeline_text.delete('1.0', tk.END)
+        stages = ["IF", "ID", "EX", "MEM", "WB"]
+        for stage_name, stage_content in zip(stages, self.segmentado.pipeline):
+            self.pipeline_text.insert(tk.END, f"{stage_name}: {stage_content}\n")
 
 if __name__ == "__main__":
     root = tk.Tk()
