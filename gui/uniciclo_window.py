@@ -86,12 +86,15 @@ class UnicicloWindow:
     def run_program(self):
         if self.start_time is None:
             self.start_time = time.time()
-        while self.uniciclo.pc < len(self.uniciclo.memory):
+        while self.uniciclo.pc < len(self.uniciclo.memory) and self.uniciclo.running:
             output = self.uniciclo.step()
             self.execution_time = time.time() - self.start_time
             self.update_ui()
             self.output_text.insert(tk.END, output)
-        self.output_text.insert(tk.END, "Program execution finished.\n")
+        if not self.uniciclo.running:
+            self.output_text.insert(tk.END, "Program execution stopped by ebreak.\n")
+        else:
+            self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def run_timed_program(self):
         if self.start_time is None:
