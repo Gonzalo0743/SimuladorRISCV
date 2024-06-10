@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-#from processor.uniciclo import Uniciclo
+from processor.multiciclo import Multiciclo
 import time
 
 class MulticicloWindow:
@@ -8,7 +8,7 @@ class MulticicloWindow:
         self.master = master
         self.master.title("Multicycle Simulator")
         self.create_widgets()
-        #self.uniciclo = Uniciclo()
+        self.simulator = Multiciclo()
         self.start_time = None
         self.execution_time = 0
 
@@ -74,7 +74,19 @@ class MulticicloWindow:
         self.output_text.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
 
     def load_program(self):
-        print("LOAD")
+
+        example_program = [
+            0x00200093,  # addi x1, x0, 2
+            0x00300113,  # addi x2, x0, 3
+            0x002081b3,  # add x3, x1, x2
+            0x0000a023,  # sw x0, 0(x1)
+            0x00112083,  # lw x1, 1(x2)
+            0x00006133,  # and x2, x1, x0
+            0x000041B3,  # or x3, x0, x1
+            0x00400063,  # beq x0, x0, 4 (salto si igual)
+            0x00500063   # bne x0, x0, 5 (salto si no igual)
+        ]
+        self.simulator.load_program(example_program)
 
     def run_program(self):
         print("RUN")
