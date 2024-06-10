@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import ttk
 from processor.multiciclo import Multiciclo
+from processor.assembler import Assembler
 import time
 
 class MulticicloWindow:
@@ -9,15 +9,14 @@ class MulticicloWindow:
         self.master.title("Multicycle Simulator")
         self.create_widgets()
         self.simulator = Multiciclo()
+        self.assembler = Assembler()
         self.start_time = None
         self.execution_time = 0
 
     def create_widgets(self):
-        # Create a main frame
         self.main_frame = tk.Frame(self.master, padx=10, pady=10)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Add control buttons at the top
         self.controls_frame = tk.Frame(self.main_frame)
         self.controls_frame.pack(fill=tk.X, pady=5)
 
@@ -33,7 +32,6 @@ class MulticicloWindow:
         self.run_timed_button = tk.Button(self.controls_frame, text="Run Timed", command=self.run_timed_program)
         self.run_timed_button.pack(side=tk.LEFT, padx=5)
 
-        # Add status labels
         self.status_frame = tk.Frame(self.main_frame)
         self.status_frame.pack(fill=tk.X, pady=5)
 
@@ -46,11 +44,12 @@ class MulticicloWindow:
         self.pc_label = tk.Label(self.status_frame, text="PC: 0x00000000")
         self.pc_label.pack(side=tk.LEFT, padx=5)
 
-        # Add a separator
+        self.cpi_label = tk.Label(self.status_frame, text="CPI: 0")
+        self.cpi_label.pack(side=tk.LEFT, padx=5)
+
         separator = tk.Frame(self.main_frame, height=2, bd=1, relief=tk.SUNKEN)
         separator.pack(fill=tk.X, pady=10)
 
-        # Create text areas for registers and memory with labels
         self.data_frame = tk.Frame(self.main_frame)
         self.data_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -66,45 +65,85 @@ class MulticicloWindow:
         self.memory_text = tk.Text(self.data_frame, height=10, width=30)
         self.memory_text.grid(row=1, column=1, padx=10, pady=5)
 
-        # Add output text area with a label
+        self.assembly_label = tk.Label(self.data_frame, text="Assembly Code", font=("Helvetica", 14))
+        self.assembly_label.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+
+        self.assembly_text = tk.Text(self.data_frame, height=10, width=80)
+        self.assembly_text.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
+
         self.output_label = tk.Label(self.data_frame, text="Output", font=("Helvetica", 14))
-        self.output_label.grid(row=2, column=0, columnspan=2, padx=10, pady=5)
+        self.output_label.grid(row=4, column=0, columnspan=2, padx=10, pady=5)
 
         self.output_text = tk.Text(self.data_frame, height=10, width=80)
-        self.output_text.grid(row=3, column=0, columnspan=2, padx=10, pady=5)
+        self.output_text.grid(row=5, column=0, columnspan=2, padx=10, pady=5)
 
     def load_program(self):
-
-        example_program = [
-            0x00200093,  # addi x1, x0, 2
-            0x00300113,  # addi x2, x0, 3
-            0x002081b3,  # add x3, x1, x2
-            0x0000a023,  # sw x0, 0(x1)
-            0x00112083,  # lw x1, 1(x2)
-            0x00006133,  # and x2, x1, x0
-            0x000041B3,  # or x3, x0, x1
-            0x00400063,  # beq x0, x0, 4 (salto si igual)
-            0x00500063   # bne x0, x0, 5 (salto si no igual)
-        ]
-        self.simulator.load_program(example_program)
+        assembly_code = self.assembly_text.get("1.0", tk.END)
+        try:
+            machine_code = self.assembler.assemble(assembly_code)
+            self.simulator.load_program(machine_code)
+            self.output_text.insert(tk.END, "Assembly program loaded.\n")
+        except ValueError as e:
+            self.output_text.insert(tk.END, f"Error: {e}\n")
 
     def run_program(self):
-        print("RUN")
+        if self.start_time is None:
+            self.start_time = time.time()
+        while self.simulator.pc < len(self.simulator.memory) and self.simulator.running:
+            output = self.simulator.step()
+            self.execution_time = time.time() - self.start_time
+            self.update_ui()
+            self.output_text.insert(tk.END, output)
+        if not self.simulator.running:
+            self.output_text.insert(tk.END, "Program execution stopped by ebreak.\n")
+        else:
+            self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def run_timed_program(self):
-        print("RUN")
+        if self.start_time is None:
+            self.start_time = time.time()
+        self.master.after(1000, self.step_timed)
 
     def step_timed(self):
-        print("STEP TIME")    
+        if self.simulator.pc < len(self.simulator.memory):
+            output = self.simulator.step()
+            self.execution_time = time.time() - self.start_time
+            self.update_ui()
+            self.output_text.insert(tk.END, output)
+            self.master.after(1000, self.step_timed)
+        else:
+            self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def step_program(self):
-        print("STEP")
+        if self.start_time is None:
+            self.start_time = time.time()
+        if self.simulator.pc < len(self.simulator.memory):
+            output = self.simulator.step()
+            self.execution_time = time.time() - self.start_time
+            self.update_ui()
+            self.output_text.insert(tk.END, output)
+        else:
+            self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def update_ui(self):
-        print("UPDATE UI")
+        self.cycle_label.config(text=f"Cycle: {self.simulator.cycle_count}")
+        self.time_label.config(text=f"Execution Time: {self.execution_time:.2f}s")
+        self.pc_label.config(text=f"PC: 0x{self.simulator.pc:08X}")
+        self.update_registers()
+        self.update_memory()
 
     def update_registers(self):
-        print("UPDATE UI")
+        self.registers_text.delete('1.0', tk.END)
+        for i in range(len(self.simulator.registers)):
+            self.registers_text.insert(tk.END, f"x{i}: 0x{self.simulator.registers[i]:08X}\n")
 
     def update_memory(self):
-        print("UPDATE MEM")
+        self.memory_text.delete('1.0', tk.END)
+        for addr in range(0, len(self.simulator.memory), 4):
+            value = int.from_bytes(self.simulator.memory[addr:addr+4], 'little')
+            self.memory_text.insert(tk.END, f"0x{addr:08X}: 0x{value:08X}\n")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MulticicloWindow(root)
+    root.mainloop()
