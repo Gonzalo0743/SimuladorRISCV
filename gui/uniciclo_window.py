@@ -1,6 +1,7 @@
 import tkinter as tk
 from processor.uniciclo import Uniciclo
 from processor.assembler import Assembler
+from processor.execution_statistics import ExecutionStatistics  # Asegúrate de importar ExecutionStatistics
 import time
 
 class UnicicloWindow:
@@ -12,6 +13,9 @@ class UnicicloWindow:
         self.assembler = Assembler()
         self.start_time = None
         self.execution_time = 0
+        self.execution_stats = ExecutionStatistics()
+        self.cycle_time_ns = 10  # Suponiendo 10 ns por ciclo
+        self.num_instructions = 0
 
     def create_widgets(self):
         self.main_frame = tk.Frame(self.master, padx=10, pady=10)
@@ -74,11 +78,18 @@ class UnicicloWindow:
         self.output_text = tk.Text(self.data_frame, height=10, width=80)
         self.output_text.grid(row=5, column=0, columnspan=2, padx=10, pady=5)
 
+        self.stats_label = tk.Label(self.data_frame, text="Statistics", font=("Helvetica", 14))
+        self.stats_label.grid(row=6, column=0, columnspan=2, padx=10, pady=5)
+
+        self.stats_text = tk.Text(self.data_frame, height=10, width=80)
+        self.stats_text.grid(row=7, column=0, columnspan=2, padx=10, pady=5)
+
     def load_program(self):
         assembly_code = self.assembly_text.get("1.0", tk.END)
         try:
             machine_code = self.assembler.assemble(assembly_code)
             self.uniciclo.load_program(machine_code)
+            self.num_instructions = len(machine_code)
             self.output_text.insert(tk.END, "Assembly program loaded.\n")
         except ValueError as e:
             self.output_text.insert(tk.END, f"Error: {e}\n")
@@ -91,6 +102,7 @@ class UnicicloWindow:
             self.execution_time = time.time() - self.start_time
             self.update_ui()
             self.output_text.insert(tk.END, output)
+        self.record_statistics()
         if not self.uniciclo.running:
             self.output_text.insert(tk.END, "Program execution stopped by ebreak.\n")
         else:
@@ -102,25 +114,47 @@ class UnicicloWindow:
         self.master.after(1000, self.step_timed)
 
     def step_timed(self):
-        if self.uniciclo.pc < len(self.uniciclo.memory):
+        if self.uniciclo.pc < len(self.uniciclo.memory) and self.uniciclo.running:
             output = self.uniciclo.step()
             self.execution_time = time.time() - self.start_time
             self.update_ui()
             self.output_text.insert(tk.END, output)
             self.master.after(1000, self.step_timed)
         else:
-            self.output_text.insert(tk.END, "Program execution finished.\n")
+            self.record_statistics()
+            if not self.uniciclo.running:
+                self.output_text.insert(tk.END, "Program execution stopped by ebreak.\n")
+            else:
+                self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def step_program(self):
         if self.start_time is None:
             self.start_time = time.time()
-        if self.uniciclo.pc < len(self.uniciclo.memory):
+        if self.uniciclo.pc < len(self.uniciclo.memory) and self.uniciclo.running:
             output = self.uniciclo.step()
             self.execution_time = time.time() - self.start_time
             self.update_ui()
             self.output_text.insert(tk.END, output)
         else:
-            self.output_text.insert(tk.END, "Program execution finished.\n")
+            self.record_statistics()
+            if not self.uniciclo.running:
+                self.output_text.insert(tk.END, "Program execution stopped by ebreak.\n")
+            else:
+                self.output_text.insert(tk.END, "Program execution finished.\n")
+
+    def record_statistics(self):
+        num_cycles = self.uniciclo.cycle
+        num_instructions = self.num_instructions  # Corregido: usamos la longitud del programa cargado
+        cpi = num_cycles / num_instructions
+        execution_time_ns = num_cycles * self.cycle_time_ns
+        self.execution_stats.add_execution(num_cycles, num_instructions, self.cycle_time_ns)
+        self.display_statistics()
+
+    def display_statistics(self):
+        self.stats_text.delete('1.0', tk.END)
+        self.stats_text.insert(tk.END, f"{'Execution':<10}{'Cycles':<10}{'Instructions':<15}{'CPI':<10}{'Time (ns)':<10}\n")
+        for i, stat in enumerate(self.execution_stats.get_statistics()):
+            self.stats_text.insert(tk.END, f"{i+1:<10}{stat['num_cycles']:<10}{stat['num_instructions']:<15}{stat['cpi']:<10}{stat['execution_time_ns']:<10}\n")
 
     def update_ui(self):
         self.cycle_label.config(text=f"Cycle: {self.uniciclo.cycle}")
@@ -137,7 +171,7 @@ class UnicicloWindow:
     def update_memory(self):
         self.memory_text.delete('1.0', tk.END)
         for addr in range(0, len(self.uniciclo.memory), 4):
-            value = int.from_bytes(self.uniciclo.memory[addr:addr+4], 'little')
+            value = int.from_bytes(self.uniciclo.memory[addr:addr + 4], byteorder='little')
             self.memory_text.insert(tk.END, f"0x{addr:08X}: 0x{value:08X}\n")
 
 if __name__ == "__main__":
