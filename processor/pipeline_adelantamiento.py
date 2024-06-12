@@ -12,13 +12,12 @@ class PipelinedRegister:
         self.opcode = 0
         self.alu_result = 0
 
-class Segmentado_Stalls:
+class Segmentado_Adelantamiento:
     def __init__(self):
         self.memory = bytearray(1024)  # 1KB of memory
         self.registers = [0] * 32
         self.pc = 0
         self.cycle = 0
-        self.stall = False
 
         # Initialize pipeline registers
         self.IF_ID = PipelinedRegister()

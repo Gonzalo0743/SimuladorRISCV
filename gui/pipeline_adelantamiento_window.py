@@ -1,14 +1,14 @@
 import tkinter as tk
-from processor.pipeline_stalls import Segmentado_Stalls
+from processor.pipeline_adelantamiento import Segmentado_Adelantamiento
 from processor.assembler import Assembler
 import time
 
-class Segmentado_Stalls_Window:
+class Segmentado_Adelantamiento_Window:
     def __init__(self, master):
         self.master = master
-        self.master.title("Segmentado Simulator")
+        self.master.title("Segmentado con Adelantamiento Simulator")
         self.create_widgets()
-        self.segmentado = Segmentado_Stalls()
+        self.segmentado = Segmentado_Adelantamiento()
         self.assembler = Assembler()
         self.start_time = None
         self.execution_time = 0
@@ -148,5 +148,5 @@ class Segmentado_Stalls_Window:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = Segmentado_Stalls_Window(root)
+    app = Segmentado_Adelantamiento_Window(root)
     root.mainloop()
