@@ -10,10 +10,10 @@ class Multiciclo:
         self.result = None
         self.cycle_count = 0       
         self.instruction_count = 0 
-        self.running = True  # Flag to control execution
+        self.running = True  
         
         # Estados FSM
-        self.states = ['fetch', 'decode', 'memory_address', 'memory_read', 'memory_write_back', 'execute', 'write_back']
+        self.states = ['fetch', 'decode', 'memory_access', 'memory_write_back', 'execute', 'write_back']
         self.current_state = 'fetch'
 
 
@@ -38,23 +38,19 @@ class Multiciclo:
         funct7 = (instruction >> 25) & 0x7F
         imm = self.sign_extend((instruction >> 20) & 0xFFF, 12)
         self.decoded_instruction = (opcode, rd, funct3, rs1, rs2, funct7, imm)
-        self.current_state = 'memory_address'
+        self.current_state = 'memory_access'
         self.cycle_count += 1
 
-    def memory_address(self):  # Funcion para memaddr
+    def memory_access(self):  # Funcion combinada para memaddr y memread
         opcode, rd, funct3, rs1, rs2, funct7, imm = self.decoded_instruction
-        if opcode in [0x03, 0x23]:  # Load/Store instructions
+        if opcode == 0x03:  # Load
+            self.address = self.registers[rs1] + imm
+            self.result = int.from_bytes(self.memory[self.address:self.address + 4], 'little')
+        elif opcode == 0x23:  # Store
             self.address = self.registers[rs1] + imm
         else:
             self.address = None  # No address needed for non-memory instructions
-        self.current_state = 'memory_read'
-        self.cycle_count += 1
-
-    def memory_read(self):  # Funcion para memard
-        opcode, rd, funct3, rs1, rs2, funct7, imm = self.decoded_instruction
-        if opcode == 0x03:  # Load
-            self.result = int.from_bytes(self.memory[self.address:self.address + 4], 'little')
-        self.current_state = 'memory_write_back'
+        self.current_state = 'memory_write_back' if opcode == 0x23 else 'execute'
         self.cycle_count += 1
 
     def memory_write_back(self):  # Funcion para mem wb
@@ -72,6 +68,8 @@ class Multiciclo:
                     self.result = self.registers[rs1] + self.registers[rs2]  # add
                 elif funct7 == 0x20:
                     self.result = self.registers[rs1] - self.registers[rs2]  # sub
+                elif funct7 == 0x01:
+                    self.result = self.registers[rs1] * self.registers[rs2]  # mul
             elif funct3 == 0x7:
                 self.result = self.registers[rs1] & self.registers[rs2]  # and
             elif funct3 == 0x6:
@@ -111,8 +109,7 @@ class Multiciclo:
         state_actions = {
             'fetch': self.fetch,
             'decode': self.decode,
-            'memory_address': self.memory_address,
-            'memory_read': self.memory_read,
+            'memory_access': self.memory_access,
             'memory_write_back': self.memory_write_back,
             'execute': self.execute,
             'write_back': self.write_back
@@ -121,7 +118,7 @@ class Multiciclo:
             state_actions[self.current_state]()
         cpi = self.CPI_counter()
         instruction = self.current_instruction
-        output = f"PC: 0x{self.pc - 4:08X}, Cycle: {self.cycle_count}, Instruction: 0x{instruction:08X},CPI: {cpi:.2f}\n"
+        output = f"PC: 0x{self.pc - 4:08X}, Cycle: {self.cycle_count}, Instruction: 0x{instruction:08X}, CPI: {cpi:.2f}\n"
         return output
 
     def run(self):
@@ -146,5 +143,14 @@ class Multiciclo:
         return (value & (sign_bit - 1)) - (value & sign_bit)
 
 
+# Test
+processor = Multiciclo()
+code = [
+    0x00200093,  # addi x1, x0, 2
+    0x00300113,  # addi x2, x0, 3
+    0x002081b3   # add x3, x1, x2
+]
+processor.load_program(code)
+processor.run()
 
-
+print(processor.registers)
