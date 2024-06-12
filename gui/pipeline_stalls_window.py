@@ -74,13 +74,6 @@ class Segmentado_Stalls_Window:
         self.output_text = tk.Text(self.data_frame, height=10, width=80)
         self.output_text.grid(row=5, column=0, columnspan=2, padx=10, pady=5, sticky=tk.W)
 
-        self.pipeline_label = tk.Label(self.data_frame, text="Ubicacion de instruccion en Pipeline", font=("Helvetica", 14))
-        self.pipeline_label.grid(row=0, column=3, padx=10, pady=5, sticky=tk.W)
-
-        self.pipeline_text = tk.Text(self.data_frame, height=10, width=30)
-        self.pipeline_text.grid(row=1, column=3, columnspan=3, padx=10, pady=5, sticky=tk.W)
-
-
     def load_program(self):
         assembly_code = self.assembly_text.get("1.0", tk.END)
         try:
@@ -151,6 +144,7 @@ class Segmentado_Stalls_Window:
         stages = ["IF", "ID", "EX", "MEM", "WB"]
         for stage_name, stage_content in zip(stages, self.segmentado.pipeline):
             self.pipeline_text.insert(tk.END, f"{stage_name}: {stage_content}\n")
+        
 
 if __name__ == "__main__":
     root = tk.Tk()

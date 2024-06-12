@@ -52,6 +52,8 @@ class Segmentado_Stalls:
 
         # Memory Access (MEM) stage
         if self.EX_MEM.valid:
+            instruction = self.EX_MEM.instruction
+            self.MEM_WB.instruction = instruction
             if self.EX_MEM.opcode == 0x03:  # lw
                 address = self.EX_MEM.alu_result
                 self.MEM_WB.alu_result = int.from_bytes(self.memory[address:address+4], 'little')
@@ -68,6 +70,8 @@ class Segmentado_Stalls:
 
         # Execute (EX) stage
         if self.ID_EX.valid:
+            instruction = self.ID_EX.instruction
+            self.EX_MEM.instruction = instruction
             if self.ID_EX.opcode == 0x03:  # lw
                 self.EX_MEM.alu_result = self.registers[self.ID_EX.rs1] + self.ID_EX.imm
             elif self.ID_EX.opcode == 0x23:  # sw
@@ -123,13 +127,20 @@ class Segmentado_Stalls:
             self.IF_ID.valid = True
             self.pc += 4
 
-         # Return the state of the pipeline for debugging
+
+        # Return the state of the pipeline for debugging
         return (
             f"Cycle: {self.cycle}\n"
             f"IF/ID: {self.IF_ID.instruction:08X}\n"
             f"ID/EX: {self.ID_EX.instruction:08X}\n"
             f"EX/MEM: {self.EX_MEM.instruction:08X}\n"
             f"MEM/WB: {self.MEM_WB.instruction:08X}\n"
-            f"Registers: {self.registers}\n"
-            f"Memory: {self.memory[:32]}\n"
         )
+
+    def stall_pipeline(self):
+        # Hold the IF/ID and ID/EX stages by copying their current contents
+        self.IF_ID.valid = False
+        self.ID_EX.valid = False
+        self.IF_ID.instruction = self.IF_ID.instruction
+        self.ID_EX.instruction = self.ID_EX.instruction
+
