@@ -63,7 +63,7 @@ class Segmentado_Stalls:
     #Calculadora CPI
     def CPI_counter(self):
         if self.instruction_counter > 0:
-            cpi = self.instruction_counter / self.instruction_counter
+            cpi = self.temp_counter / self.instruction_counter
             return cpi
         else:
             return 1

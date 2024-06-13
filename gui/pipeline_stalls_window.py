@@ -134,7 +134,7 @@ class Segmentado_Stalls_Window:
             self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def record_statistics(self):
-        num_cycles = self.segmentado.cycle
+        num_cycles = self.segmentado.temp_counter
         num_instructions = self.num_instructions  
         cpi = num_cycles / num_instructions
         execution_time_ns = num_cycles * self.cycle_time_ns
