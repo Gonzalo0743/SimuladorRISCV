@@ -1,6 +1,7 @@
 import tkinter as tk
 from processor.assembler import Assembler
 from processor.pipeline_adelantamiento import Segmentado_Adelantamiento
+from processor.execution_statistics import ExecutionStatistics
 import time
 
 class Segmentado_Adelantamiento_Window:
@@ -14,6 +15,7 @@ class Segmentado_Adelantamiento_Window:
         self.execution_time = 0
         self.cycle_time_ns = 10  # Suponiendo 10 ns por ciclo
         self.num_instructions = 0
+        self.execution_stats = ExecutionStatistics()
 
     def create_widgets(self):
         self.main_frame = tk.Frame(self.master, padx=10, pady=10)
@@ -136,14 +138,22 @@ class Segmentado_Adelantamiento_Window:
         num_instructions = self.num_instructions  # Corregido: usamos la longitud del programa cargado
         cpi = num_cycles / num_instructions
         execution_time_ns = num_cycles * self.cycle_time_ns
-        self.segmentado.execution_stats.add_execution(num_cycles, num_instructions, self.cycle_time_ns)
+        self.execution_stats.add_execution(num_cycles, num_instructions, self.cycle_time_ns,0)
         self.display_statistics()
 
     def display_statistics(self):
         self.stats_text.delete('1.0', tk.END)
-        self.stats_text.insert(tk.END, f"{'Execution':<10}{'Cycles':<10}{'Instructions':<15}{'CPI':<10}{'Time (ns)':<10}\n")
-        for i, stat in enumerate(self.segmentado.get_execution_statistics()):
-            self.stats_text.insert(tk.END, f"{i+1:<10}{stat['num_cycles']:<10}{stat['num_instructions']:<15}{stat['cpi']:.2f}{stat['execution_time_ns']:.2f}\n")
+        self.stats_text.insert(tk.END, f"{'Execution':<10}{'Cycles':<10}{'Instructions':<15}{'CPI':<10}{'Time (ns)':<15}\n")
+        for i, stat in enumerate(self.execution_stats.get_statistics()):
+            num_cycles = f"{stat['num_cycles']:}"
+            num_instructions = f"{stat['num_instructions']:}"
+            cpi = f"{stat['cpi']:.2f}"
+            execution_time_ns = f"{stat['execution_time_ns']:.2f}"
+            stage = f"{stat['stage']:}"
+            self.stats_text.insert(
+                tk.END, 
+                f"{i+1:<10}{num_cycles:<10}{num_instructions:<15}{cpi:<10}{execution_time_ns:<10}\n"
+            )
 
     def update_ui(self):
         self.cycle_label.config(text=f"Cycle: {self.segmentado.cycle}")

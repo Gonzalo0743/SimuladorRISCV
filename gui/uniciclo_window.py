@@ -1,7 +1,7 @@
 import tkinter as tk
 from processor.uniciclo import Uniciclo
 from processor.assembler import Assembler
-from processor.execution_statistics import ExecutionStatistics  # Asegúrate de importar ExecutionStatistics
+from processor.execution_statistics import ExecutionStatistics 
 import time
 
 class UnicicloWindow:
@@ -14,7 +14,7 @@ class UnicicloWindow:
         self.start_time = None
         self.execution_time = 0
         self.execution_stats = ExecutionStatistics()
-        self.cycle_time_ns = 10  # Suponiendo 10 ns por ciclo
+        self.cycle_time_ns = 10 
         self.num_instructions = 0
 
     def create_widgets(self):
