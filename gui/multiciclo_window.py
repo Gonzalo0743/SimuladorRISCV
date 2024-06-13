@@ -117,7 +117,7 @@ class MulticicloWindow:
         self.master.after(1000, self.step_timed)
 
     def step_timed(self):
-        if self.uniciclo.pc < len(self.uniciclo.memory) and self.uniciclo.running:
+        if self.simulator.pc < len(self.simulator.memory) and self.simulator.running:
             output = self.simulator.step()
             self.execution_time = time.time() - self.start_time
             self.update_ui()
@@ -125,7 +125,7 @@ class MulticicloWindow:
             self.master.after(1000, self.step_timed)
         else:
             self.record_statistics()
-            if not self.uniciclo.running:
+            if not self.simulator.running:
                 self.output_text.insert(tk.END, "Program execution stopped by ebreak.\n")
             else:
                 self.output_text.insert(tk.END, "Program execution finished.\n")
@@ -133,31 +133,41 @@ class MulticicloWindow:
     def step_program(self):
         if self.start_time is None:
             self.start_time = time.time()
-        if self.uniciclo.pc < len(self.uniciclo.memory) and self.uniciclo.running:
+        if self.simulator.pc < len(self.simulator.memory) and self.simulator.running:
             output = self.simulator.step()
             self.execution_time = time.time() - self.start_time
             self.update_ui()
             self.output_text.insert(tk.END, output)
         else:
             self.record_statistics()
-            if not self.uniciclo.running:
+            if not self.simulator.running:
                 self.output_text.insert(tk.END, "Program execution stopped by ebreak.\n")
             else:
                 self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def record_statistics(self):
         num_cycles = self.simulator.cycle_count
-        num_instructions = self.num_instructions  # Corregido: usamos la longitud del programa cargado
+        num_instructions = self.num_instructions  
         cpi = num_cycles / num_instructions
         execution_time_ns = num_cycles * self.cycle_time_ns
-        self.execution_stats.add_execution(num_cycles, num_instructions, self.cycle_time_ns)
+        stage=self.simulator.current_state
+        self.execution_stats.add_execution(num_cycles, num_instructions, self.cycle_time_ns,stage)
         self.display_statistics()
 
     def display_statistics(self):
         self.stats_text.delete('1.0', tk.END)
-        self.stats_text.insert(tk.END, f"{'Execution':<10}{'Cycles':<10}{'Instructions':<15}{'CPI':<10}{'Time (ns)':<10}\n")
+        self.stats_text.insert(tk.END, f"{'Execution':<10}{'Cycles':<10}{'Instructions':<15}{'CPI':<10}{'Time (ns)':<15}\n")
         for i, stat in enumerate(self.execution_stats.get_statistics()):
-            self.stats_text.insert(tk.END, f"{i+1:<10}{stat['num_cycles']:<10}{stat['num_instructions']:<15}{stat['cpi']:<10}{stat['execution_time_ns']:<10}\n")
+            num_cycles = f"{stat['num_cycles']:}"
+            num_instructions = f"{stat['num_instructions']:}"
+            cpi = f"{stat['cpi']:.2f}"
+            execution_time_ns = f"{stat['execution_time_ns']:.2f}"
+            stage = f"{stat['stage']:}"
+            self.stats_text.insert(
+                tk.END, 
+                f"{i+1:<10}{num_cycles:<10}{num_instructions:<15}{cpi:<10}{execution_time_ns:<10}\n"
+            )
+
 
     def update_ui(self):
         self.cycle_label.config(text=f"Cycle: {self.simulator.cycle_count}")
