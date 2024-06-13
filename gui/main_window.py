@@ -79,5 +79,5 @@ class MainWindow:
         about_window = tk.Toplevel(self.master)
         about_window.title("About Simulator RISC-V")
         about_window.geometry("400x300")
-        label = tk.Label(about_window, text="Simulator RISC-V\nVersion 1.0\nDeveloped by [Tu Nombre]", font=("Helvetica", 14), justify=tk.CENTER)
+        label = tk.Label(about_window, text="Simulator RISC-V\nVersion 1.0", font=("Helvetica", 14), justify=tk.CENTER)
         label.pack(expand=True, pady=20)

@@ -29,6 +29,7 @@ class Segmentado_Stalls:
         self.cycle = 0
         self.instruction_counter = 0
         self.counter = 0
+        
 
         # Initialize pipeline registers
         self.IF_ID = PipelinedRegister()
@@ -218,10 +219,6 @@ class Segmentado_Stalls:
             else:
                 self.ID_EX.valid = True
 
-        
-            
-
-
     def EX_stage(self):
         if self.ID_EX.valid:
 
@@ -284,4 +281,3 @@ class Segmentado_Stalls:
 
             self.WB.valid = True
             self.MEM_WB.valid = False
-

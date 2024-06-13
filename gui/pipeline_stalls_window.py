@@ -102,6 +102,7 @@ class Segmentado_Stalls_Window:
             self.execution_time = time.time() - self.start_time
             self.update_ui()
             self.output_text.insert(tk.END, output)
+        self.record_statistics()
         self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def run_timed_program(self):
@@ -133,12 +134,11 @@ class Segmentado_Stalls_Window:
             self.output_text.insert(tk.END, "Program execution finished.\n")
 
     def record_statistics(self):
-        num_cycles = self.simulator.cycle_count
+        num_cycles = self.segmentado.cycle
         num_instructions = self.num_instructions  
         cpi = num_cycles / num_instructions
         execution_time_ns = num_cycles * self.cycle_time_ns
-        stage=self.simulator.current_state
-        self.execution_stats.add_execution(num_cycles, num_instructions, self.cycle_time_ns,stage)
+        self.execution_stats.add_execution(num_cycles, num_instructions, self.cycle_time_ns,0)
         self.display_statistics()
 
     def display_statistics(self):
