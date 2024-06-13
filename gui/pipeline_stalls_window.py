@@ -156,7 +156,7 @@ class Segmentado_Stalls_Window:
             )
             
     def update_ui(self):
-        self.cycle_label.config(text=f"Cycle: {self.segmentado.cycle}")
+        self.cycle_label.config(text=f"Cycle: {self.segmentado.temp_counter}")
         self.time_label.config(text=f"Execution Time: {self.execution_time:.2f}s")
         self.pc_label.config(text=f"PC: 0x{self.segmentado.pc:08X}")
         self.update_registers()
