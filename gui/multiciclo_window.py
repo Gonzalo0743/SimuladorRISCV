@@ -82,10 +82,10 @@ class MulticicloWindow:
         self.output_text.grid(row=5, column=0, columnspan=2, padx=10, pady=5)
 
         self.stats_label = tk.Label(self.data_frame, text="Statistics", font=("Helvetica", 14))
-        self.stats_label.grid(row=6, column=0, columnspan=2, padx=10, pady=5)
+        self.stats_label.grid(row=0, column=2, columnspan=2, padx=8, pady=5)
 
         self.stats_text = tk.Text(self.data_frame, height=10, width=80)
-        self.stats_text.grid(row=7, column=0, columnspan=2, padx=10, pady=5)
+        self.stats_text.grid(row=1, column=2, columnspan=2, padx=8, pady=5)
 
     def load_program(self):
         assembly_code = self.assembly_text.get("1.0", tk.END)
