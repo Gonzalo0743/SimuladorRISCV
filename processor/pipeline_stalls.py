@@ -27,6 +27,7 @@ class Segmentado_Stalls:
         self.registers = [0] * 32
         self.pc = 0
         self.cycle = 0
+        self.instruction_counter = 0
         self.counter = 0
 
         # Initialize pipeline registers
@@ -48,54 +49,39 @@ class Segmentado_Stalls:
 
     def run(self):
         output = ""
-        while self.pc < len(self.memory) or self.is_pipeline_active():
+        while self.cycle < len(self.memory):
             output += self.step()
         return output
 
     def is_pipeline_active(self):
         return self.IF_ID.valid or self.ID_EX.valid or self.EX_MEM.valid or self.MEM_WB.valid or self.WB.valid
     
+    #Calculadora CPI
+    def CPI_counter(self):
+        if self.instruction_counter > 0:
+            cpi = self.cycle / self.instruction_counter
+            return cpi
+        else:
+            return 1
+    
     def check_stall(self):
         if self.ID_EX.instruction != 00000000 and self.EX_MEM.instruction != 00000000:
                 if (self.ID_EX.instruction == self.EX_MEM.instruction):
                     self.EX_MEM.instruction = 0
                     print ("STALL en ID")
-                    '''return (
-                        f"Cycle: {self.cycle}\n"
-                        f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
-                        f"STALL ({self.ID_EX.stage})\n"
-                        f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
-                        f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
-                        f"{self.WB.instruction:08X} ({self.WB.stage})\n"
-                    )'''
 
         elif self.EX_MEM.instruction != 00000000 and self.MEM_WB.instruction != 00000000:
                 if (self.EX_MEM.instruction == self.MEM_WB.instruction):
                     self.EX_MEM.instruction = 0
                     print ("STALL en EX")
-                    '''return (
-                        f"Cycle: {self.cycle}\n"
-                        f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
-                        f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
-                        f"STALL ({self.EX_MEM.stage})\n"
-                        f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
-                        f"{self.WB.instruction:08X} ({self.WB.stage})\n"
-                    )'''
 
         elif self.MEM_WB.instruction != 00000000 and self.WB.instruction != 00000000:
                 if (self.MEM_WB.instruction == self.WB.instruction):
                     self.MEM_WB.instruction = 0
                     print ("STALL en MEM")
-                    '''return (
-                        f"Cycle: {self.cycle}\n"
-                        f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
-                        f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
-                        f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
-                        f"STALL ({self.MEM_WB.stage})\n"
-                        f"{self.WB.instruction:08X} ({self.WB.stage})\n"
-                    )'''
 
-        ''' else:
+
+        else:
             return (
                 f"Cycle: {self.cycle}\n"
                 f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
@@ -103,15 +89,12 @@ class Segmentado_Stalls:
                 f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
                 f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
                 f"{self.WB.instruction:08X} ({self.WB.stage})\n"
-            )'''
+            )
 
 
 
     def step(self):
         self.cycle += 1
-
-        print(self.counter)
-        print(self.stall)
 
         # Execute stages based on stall condition
         if self.stall == False:
@@ -129,17 +112,28 @@ class Segmentado_Stalls:
             else:
                 self.counter -=1
         
-        
+        cpi = self.CPI_counter()
         self.check_stall()
 
-        return (
-                f"Cycle: {self.cycle}\n"
-                f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
-                f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
-                f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
-                f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
-                f"{self.WB.instruction:08X} ({self.WB.stage})\n"
-            )
+        if self.stall == False:
+            return (
+                    f"Cycle: {self.cycle}\n"
+                    f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
+                    f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
+                    f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
+                    f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
+                    f"{self.WB.instruction:08X} ({self.WB.stage})\n"
+                )
+        else:
+            return (
+                    f"Cycle: {self.cycle}\n"
+                    f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
+                    f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
+                    f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
+                    f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
+                    f"{self.WB.instruction:08X} ({self.WB.stage})\n"
+                    f"Detección de hazard. STALL insertado\n"
+                )
 
     def IF_stage(self):
         if self.pc < len(self.memory):
@@ -267,6 +261,8 @@ class Segmentado_Stalls:
 
     def WB_stage(self):
         if self.MEM_WB.valid:
+            if self.WB.instruction != 0:
+                self.instruction_counter += 1
             self.WB.instruction = self.MEM_WB.instruction
             self.WB.stage = "WB"
 

@@ -4,6 +4,7 @@ class Uniciclo:
         self.registers = [0] * 32
         self.pc = 0
         self.cycle = 0
+        self.running = True  # Flag to control execution
 
     def load_program(self, program):
         self.pc = 0
@@ -12,11 +13,14 @@ class Uniciclo:
 
     def run(self):
         output = ""
-        while self.pc < len(self.memory):
+        while self.pc < len(self.memory) and self.running:
             output += self.step()
         return output
 
     def step(self):
+        if not self.running:
+            return "Execution stopped.\n"
+
         instruction = int.from_bytes(self.memory[self.pc:self.pc+4], 'little')
         self.pc += 4
         self.cycle += 1
@@ -44,5 +48,8 @@ class Uniciclo:
                     self.registers[rd] = self.registers[rs1] - self.registers[rs2]
                 elif funct7 == 0x01:  # mul
                     self.registers[rd] = self.registers[rs1] * self.registers[rs2]
+        elif opcode == 0x73 and funct3 == 0x0:  # ebreak
+            self.running = False
+            return f"EBREAK encountered. Halting execution.\n"
 
         return f"PC: 0x{self.pc:08X}, Cycle: {self.cycle}, Instruction: 0x{instruction:08X}\n"

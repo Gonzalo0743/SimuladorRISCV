@@ -145,18 +145,4 @@ class Multiciclo:
         sign_bit = 1 << (bits - 1)
         return (value & (sign_bit - 1)) - (value & sign_bit)
     
-processor = Multiciclo()
-code = [
-    0x00200093,  # addi x1, x0, 2
-    0x00300113,  # addi x2, x0, 3
-    0x002081B3,  # add x3, x1, x2
-    0x00112023,  # sw x1, 0(x2) -> Memory[x2 + 0] = x1
-    0x00012103,  # lw x3, 0(x2) -> x3 = Memory[x2 + 0]
-    0x00100073   # ebreak
-]
-processor.load_program(code)
-output = processor.run()
-
-print(output)
-print(processor.registers)  # Print registers to see the result
 

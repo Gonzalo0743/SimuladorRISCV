@@ -1,0 +1,7 @@
+
+*.pyc
+*.pyc
+processor/__pycache__/__init__.cpython-310.pyc
+processor/__pycache__/assembler.cpython-310.pyc
+processor/__pycache__/pipeline_adelantamiento.cpython-310.pyc
+processor/__pycache__/pipeline_stalls.cpython-310.pyc
