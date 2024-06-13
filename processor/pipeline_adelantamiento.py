@@ -1,3 +1,20 @@
+class ExecutionStatistics:
+    def __init__(self):
+        self.executions = []
+
+    def add_execution(self, num_cycles, num_instructions, cycle_time_ns):
+        cpi = num_cycles / num_instructions if num_instructions > 0 else float('inf')
+        execution_time_ns = num_cycles * cycle_time_ns
+        self.executions.append({
+            'num_cycles': num_cycles,
+            'num_instructions': num_instructions,
+            'cpi': cpi,
+            'execution_time_ns': execution_time_ns
+        })
+
+    def get_statistics(self):
+        return self.executions
+
 class PipelinedRegister:
     def __init__(self):
         self.instruction = 0
@@ -20,6 +37,9 @@ class Segmentado_Adelantamiento:
         self.pc = 0
         self.cycle = 0
         self.halted = False  # To handle ebreak
+        self.num_instructions = 0
+        self.cycle_time_ns = 1  # Assuming 1 ns per cycle for simplicity
+        self.execution_stats = ExecutionStatistics()
 
         # Initialize pipeline registers
         self.IF_ID = PipelinedRegister()
@@ -29,6 +49,7 @@ class Segmentado_Adelantamiento:
 
     def load_program(self, program):
         self.pc = 0
+        self.num_instructions = len(program)
         for i, instruction in enumerate(program):
             self.memory[i * 4:(i + 1) * 4] = instruction.to_bytes(4, byteorder='little')
 
@@ -36,6 +57,7 @@ class Segmentado_Adelantamiento:
         output = ""
         while not self.halted and (self.pc < len(self.memory) or self.is_pipeline_active()):
             output += self.step()
+        self.record_statistics()
         return output
 
     def is_pipeline_active(self):
@@ -84,7 +106,7 @@ class Segmentado_Adelantamiento:
         self.ID_EX.pc = self.IF_ID.pc
 
         opcode = instruction & 0x7F
-        rd = (instruction >> 7) &         0x1F
+        rd = (instruction >> 7) & 0x1F
         funct3 = (instruction >> 12) & 0x7
         rs1 = (instruction >> 15) & 0x1F
         rs2 = (instruction >> 20) & 0x1F
@@ -197,3 +219,8 @@ class Segmentado_Adelantamiento:
 
         return wb_output
 
+    def record_statistics(self):
+        self.execution_stats.add_execution(self.cycle, self.num_instructions, self.cycle_time_ns)
+
+    def get_execution_statistics(self):
+        return self.execution_stats.get_statistics()
