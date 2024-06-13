@@ -58,7 +58,7 @@ class Segmentado_Stalls:
     def check_stall(self):
         if self.ID_EX.instruction != 00000000 and self.EX_MEM.instruction != 00000000:
                 if (self.ID_EX.instruction == self.EX_MEM.instruction):
-                    self.ID_EX.instruction = 0
+                    self.EX_MEM.instruction = 0
                     print ("STALL en ID")
                     '''return (
                         f"Cycle: {self.cycle}\n"
@@ -124,7 +124,7 @@ class Segmentado_Stalls:
             self.WB_stage()
             self.MEM_stage()
             self.EX_stage()
-            if self.counter == 0:
+            if self.counter == 1:
                 self.stall = False
             else:
                 self.counter -=1
@@ -204,7 +204,7 @@ class Segmentado_Stalls:
                         self.counter += 1
                         print (f"Hazard en DECODE 1.  Ciclo: {self.cycle}\n")
                     if self.ID_EX.rs1 == self.MEM_WB.rd or self.ID_EX.rs2 == self.MEM_WB.rd:
-                        #self.pc -= 4
+                        self.pc -= 4
                         self.counter += 2
                         self.stall = True
                         print (f"Hazard en DECODE 2.  Ciclo: {self.cycle}\n")
