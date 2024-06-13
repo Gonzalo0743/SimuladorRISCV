@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, Menu
 from gui.uniciclo_window import UnicicloWindow
 from gui.pipeline_stalls_window import Segmentado_Stalls_Window
+from gui.multiciclo_window import MulticicloWindow
 
 class MainWindow:
     def __init__(self, master):
@@ -58,8 +59,8 @@ class MainWindow:
         UnicicloWindow(uniciclo_window)
 
     def open_multiciclo(self):
-        # Aquí puedes implementar la lógica para abrir la ventana de Multiciclo
-        pass
+        multiciclo_window = tk.Toplevel(self.master)
+        MulticicloWindow(multiciclo_window)
 
     def open_pipeline_stalls(self):
         pipeline_stalls_window = tk.Toplevel(self.master)
