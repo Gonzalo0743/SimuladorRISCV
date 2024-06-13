@@ -3,6 +3,7 @@ from tkinter import ttk, Menu
 from gui.uniciclo_window import UnicicloWindow
 from gui.pipeline_stalls_window import Segmentado_Stalls_Window
 from gui.multiciclo_window import MulticicloWindow
+from gui.pipeline_adelantamiento_window import Segmentado_Adelantamiento_Window
 
 class MainWindow:
     def __init__(self, master):
@@ -33,7 +34,7 @@ class MainWindow:
         self.pipeline_button = tk.Button(self.button_frame, text="Pipeline con Stalls", command=self.open_pipeline_stalls, font=("Helvetica", 16))
         self.pipeline_button.pack(pady=5, padx=10)
 
-        self.pipeline_button = tk.Button(self.button_frame, text="Pipeline con Adelantamiento", command=self.open_pipeline_stalls, font=("Helvetica", 16))
+        self.pipeline_button = tk.Button(self.button_frame, text="Pipeline con Adelantamiento", command=self.open_pipeline_adelantamiento, font=("Helvetica", 16))
         self.pipeline_button.pack(pady=5, padx=10)
 
         # Añadimos un botón para salir
@@ -64,7 +65,11 @@ class MainWindow:
 
     def open_pipeline_stalls(self):
         pipeline_stalls_window = tk.Toplevel(self.master)
-        Segmentado_Stalls_Window(pipeline_stalls_window)
+        Segmentado_Adelantamiento_Window(pipeline_stalls_window)
+
+    def open_pipeline_adelantamiento(self):
+        pipeline_adelantamiento_window = tk.Toplevel(self.master)
+        Segmentado_Adelantamiento_Window(pipeline_adelantamiento_window)
 
     def open_file(self):
         # Aquí puedes implementar la lógica para abrir un archivo

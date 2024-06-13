@@ -1,14 +1,14 @@
 import tkinter as tk
-from processor.pipeline_stalls import Segmentado_Stalls
 from processor.assembler import Assembler
+from processor.pipeline_adelantamiento import Segmentado_Adelantamiento
 import time
 
-class Segmentado_Stalls_Window:
+class Segmentado_Adelantamiento_Window:
     def __init__(self, master):
         self.master = master
-        self.master.title("Segmentado Simulator")
+        self.master.title("Segmentado con Adelantamiento Simulator")
         self.create_widgets()
-        self.segmentado = Segmentado_Stalls()
+        self.segmentado = Segmentado_Adelantamiento()
         self.assembler = Assembler()
         self.start_time = None
         self.execution_time = 0
@@ -86,7 +86,7 @@ class Segmentado_Stalls_Window:
     def run_program(self):
         if self.start_time is None:
             self.start_time = time.time()
-        while self.segmentado.pc < len(self.segmentado.memory):
+        while self.segmentado.pc < len(self.segmentado.memory) or self.segmentado.is_pipeline_active():
             output = self.segmentado.step()
             self.execution_time = time.time() - self.start_time
             self.update_ui()
@@ -99,7 +99,7 @@ class Segmentado_Stalls_Window:
         self.master.after(1000, self.step_timed)
 
     def step_timed(self):
-        if self.segmentado.pc < len(self.segmentado.memory):
+        if self.segmentado.pc < len(self.segmentado.memory) or self.segmentado.is_pipeline_active():
             output = self.segmentado.step()
             self.execution_time = time.time() - self.start_time
             self.update_ui()
@@ -111,7 +111,7 @@ class Segmentado_Stalls_Window:
     def step_program(self):
         if self.start_time is None:
             self.start_time = time.time()
-        if self.segmentado.pc < len(self.segmentado.memory):
+        if self.segmentado.pc < len(self.segmentado.memory) or self.segmentado.is_pipeline_active():
             output = self.segmentado.step()
             self.execution_time = time.time() - self.start_time
             self.update_ui()
@@ -126,12 +126,10 @@ class Segmentado_Stalls_Window:
         self.update_registers()
         self.update_memory()
 
-
     def update_registers(self):
         self.registers_text.delete('1.0', tk.END)
         for i in range(len(self.segmentado.registers)):
             self.registers_text.insert(tk.END, f"x{i}: 0x{self.segmentado.registers[i]:08X}\n")
-
 
     def update_memory(self):
         self.memory_text.delete('1.0', tk.END)
@@ -139,14 +137,7 @@ class Segmentado_Stalls_Window:
             value = int.from_bytes(self.segmentado.memory[addr:addr+4], 'little')
             self.memory_text.insert(tk.END, f"0x{addr:08X}: 0x{value:08X}\n")
 
-    def update_pipeline(self):
-        self.pipeline_text.delete('1.0', tk.END)
-        stages = ["IF", "ID", "EX", "MEM", "WB"]
-        for stage_name, stage_content in zip(stages, self.segmentado.pipeline):
-            self.pipeline_text.insert(tk.END, f"{stage_name}: {stage_content}\n")
-        
-
 if __name__ == "__main__":
     root = tk.Tk()
-    app = Segmentado_Stalls_Window(root)
+    app = Segmentado_Adelantamiento_Window(root)
     root.mainloop()
