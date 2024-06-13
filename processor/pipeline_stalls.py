@@ -11,6 +11,15 @@ class PipelinedRegister:
         self.imm = 0
         self.opcode = 0
         self.alu_result = 0
+        self.memory_data = 0
+        self.stage = ""
+
+
+'''
+    Control de riesgos:
+        F: Comprueba  hazard de datos si una instruccion lw va a intentar leer la direccion de memoria que otra instruccion sw está escribiendo
+        ID: Comprueba si alguna instruccion dependiente intenta leer algún registro que esté siendo escrito por otra instrucción dependiente o lw 
+'''
 
 class Segmentado_Stalls:
     def __init__(self):
@@ -18,12 +27,19 @@ class Segmentado_Stalls:
         self.registers = [0] * 32
         self.pc = 0
         self.cycle = 0
+        self.counter = 0
 
         # Initialize pipeline registers
         self.IF_ID = PipelinedRegister()
         self.ID_EX = PipelinedRegister()
         self.EX_MEM = PipelinedRegister()
         self.MEM_WB = PipelinedRegister()
+        self.WB = PipelinedRegister()  # Explicit WB stage
+
+        # Hazard detection
+        self.stall = False
+        self.flush = False  # Flag to indicate flushing after a stall
+
 
     def load_program(self, program):
         self.pc = 0
@@ -37,41 +53,177 @@ class Segmentado_Stalls:
         return output
 
     def is_pipeline_active(self):
-        return self.IF_ID.valid or self.ID_EX.valid or self.EX_MEM.valid or self.MEM_WB.valid
+        return self.IF_ID.valid or self.ID_EX.valid or self.EX_MEM.valid or self.MEM_WB.valid or self.WB.valid
+    
+    def check_stall(self):
+        if self.ID_EX.instruction != 00000000 and self.EX_MEM.instruction != 00000000:
+                if (self.ID_EX.instruction == self.EX_MEM.instruction):
+                    self.ID_EX.instruction = 0
+                    print ("STALL en ID")
+                    '''return (
+                        f"Cycle: {self.cycle}\n"
+                        f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
+                        f"STALL ({self.ID_EX.stage})\n"
+                        f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
+                        f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
+                        f"{self.WB.instruction:08X} ({self.WB.stage})\n"
+                    )'''
+
+        elif self.EX_MEM.instruction != 00000000 and self.MEM_WB.instruction != 00000000:
+                if (self.EX_MEM.instruction == self.MEM_WB.instruction):
+                    self.EX_MEM.instruction = 0
+                    print ("STALL en EX")
+                    '''return (
+                        f"Cycle: {self.cycle}\n"
+                        f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
+                        f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
+                        f"STALL ({self.EX_MEM.stage})\n"
+                        f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
+                        f"{self.WB.instruction:08X} ({self.WB.stage})\n"
+                    )'''
+
+        elif self.MEM_WB.instruction != 00000000 and self.WB.instruction != 00000000:
+                if (self.MEM_WB.instruction == self.WB.instruction):
+                    self.MEM_WB.instruction = 0
+                    print ("STALL en MEM")
+                    '''return (
+                        f"Cycle: {self.cycle}\n"
+                        f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
+                        f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
+                        f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
+                        f"STALL ({self.MEM_WB.stage})\n"
+                        f"{self.WB.instruction:08X} ({self.WB.stage})\n"
+                    )'''
+
+        ''' else:
+            return (
+                f"Cycle: {self.cycle}\n"
+                f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
+                f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
+                f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
+                f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
+                f"{self.WB.instruction:08X} ({self.WB.stage})\n"
+            )'''
+
+
 
     def step(self):
         self.cycle += 1
 
-        # Write Back (WB) stage
-        if self.MEM_WB.valid:
-            if self.MEM_WB.opcode == 0x03:  # lw
-                self.registers[self.MEM_WB.rd] = self.MEM_WB.alu_result
-            elif self.MEM_WB.opcode == 0x33:  # R-type (add, sub, mul)
-                self.registers[self.MEM_WB.rd] = self.MEM_WB.alu_result
-            self.MEM_WB.valid = False
+        print(self.counter)
+        print(self.stall)
 
-        # Memory Access (MEM) stage
-        if self.EX_MEM.valid:
-            instruction = self.EX_MEM.instruction
-            self.MEM_WB.instruction = instruction
-            if self.EX_MEM.opcode == 0x03:  # lw
-                address = self.EX_MEM.alu_result
-                self.MEM_WB.alu_result = int.from_bytes(self.memory[address:address+4], 'little')
-            elif self.EX_MEM.opcode == 0x23:  # sw
-                address = self.EX_MEM.alu_result
-                self.memory[address:address+4] = self.registers[self.EX_MEM.rs2].to_bytes(4, 'little')
+        # Execute stages based on stall condition
+        if self.stall == False:
+            self.WB_stage()
+            self.MEM_stage()
+            self.EX_stage()
+            self.ID_stage()
+            self.IF_stage()
+        else:
+            self.WB_stage()
+            self.MEM_stage()
+            self.EX_stage()
+            if self.counter == 0:
+                self.stall = False
             else:
-                self.MEM_WB.alu_result = self.EX_MEM.alu_result
+                self.counter -=1
+        
+        
+        self.check_stall()
 
-            self.MEM_WB.rd = self.EX_MEM.rd
-            self.MEM_WB.opcode = self.EX_MEM.opcode
-            self.MEM_WB.valid = True
-            self.EX_MEM.valid = False
+        return (
+                f"Cycle: {self.cycle}\n"
+                f"{self.IF_ID.instruction:08X} ({self.IF_ID.stage})\n"
+                f"{self.ID_EX.instruction:08X} ({self.ID_EX.stage})\n"
+                f"{self.EX_MEM.instruction:08X} ({self.EX_MEM.stage})\n"
+                f"{self.MEM_WB.instruction:08X} ({self.MEM_WB.stage})\n"
+                f"{self.WB.instruction:08X} ({self.WB.stage})\n"
+            )
 
-        # Execute (EX) stage
+    def IF_stage(self):
+        if self.pc < len(self.memory):
+            self.IF_ID.instruction = int.from_bytes(self.memory[self.pc:self.pc+4], 'little')
+            self.IF_ID.pc = self.pc
+            self.IF_ID.stage = "IF"
+            self.pc += 4
+            
+            # Deteccion de data hazard, lw en FETCH y sw en WB
+            #               si lw en F                          si sw en WB
+            if (self.IF_ID.instruction & 0x7F) == 0x03 and (self.WB.instruction & 0x7F) == 0x23:
+                if self.IF_ID.rs1 == self.WB.rd:
+                    self.IF_ID.valid = False
+                    self.pc -= 4
+                    print (f"Hazard entre lw y sw.  Ciclo: {self.cycle}\n")
+            else:
+                self.IF_ID.valid = True
+           
+
+    def ID_stage(self):
+        if self.IF_ID.valid:
+            instruction = self.IF_ID.instruction
+
+            # Proceed with normal instruction decoding
+            self.ID_EX.instruction = instruction
+            self.ID_EX.pc = self.IF_ID.pc
+            self.ID_EX.stage = "ID"
+
+            opcode = instruction & 0x7F
+            rd = (instruction >> 7) & 0x1F
+            funct3 = (instruction >> 12) & 0x7
+            rs1 = (instruction >> 15) & 0x1F
+            rs2 = (instruction >> 20) & 0x1F
+            funct7 = (instruction >> 25) & 0x7F
+            imm = 0
+
+            if opcode == 0x03:  # lw
+                imm = instruction >> 20
+            elif opcode == 0x23:  # sw
+                imm = ((instruction >> 25) << 5) | ((instruction >> 7) & 0x1F)
+
+            
+            self.ID_EX.opcode = opcode
+            self.ID_EX.rd = rd
+            self.ID_EX.rs1 = rs1
+            self.ID_EX.rs2 = rs2
+            self.ID_EX.funct3 = funct3
+            self.ID_EX.funct7 = funct7
+            self.ID_EX.imm = imm
+            self.ID_EX.valid = True
+            self.IF_ID.valid = False
+
+            # Control de riesgos
+            #  add y mul acceden a sus operandos en esta etapa, puede haber hazard de datos por acceder 
+            if self.ID_EX.instruction != 0 and self.MEM_WB.instruction != 0:
+                if self.ID_EX.opcode == 0x33:
+                    # no hace falta para sw
+                    if (self.EX_MEM.instruction & 0x7F) == 0x23 or (self.WB.instruction & 0x7F) == 0x23:
+                        self.ID_EX.valid = True
+                    if self.ID_EX.rs1 == self.EX_MEM.rd or self.ID_EX.rs2 == self.EX_MEM.rd:
+                        self.stall = True
+                        self.counter += 1
+                        print (f"Hazard en DECODE 1.  Ciclo: {self.cycle}\n")
+                    if self.ID_EX.rs1 == self.MEM_WB.rd or self.ID_EX.rs2 == self.MEM_WB.rd:
+                        #self.pc -= 4
+                        self.counter += 2
+                        self.stall = True
+                        print (f"Hazard en DECODE 2.  Ciclo: {self.cycle}\n")
+                    else:
+                        self.ID_EX.valid = True
+            else:
+                self.ID_EX.valid = True
+
+        
+            
+
+
+    def EX_stage(self):
         if self.ID_EX.valid:
+
             instruction = self.ID_EX.instruction
             self.EX_MEM.instruction = instruction
+            self.EX_MEM.stage = "EX"
+
             if self.ID_EX.opcode == 0x03:  # lw
                 self.EX_MEM.alu_result = self.registers[self.ID_EX.rs1] + self.ID_EX.imm
             elif self.ID_EX.opcode == 0x23:  # sw
@@ -88,59 +240,41 @@ class Segmentado_Stalls:
             self.EX_MEM.rd = self.ID_EX.rd
             self.EX_MEM.rs2 = self.ID_EX.rs2
             self.EX_MEM.opcode = self.ID_EX.opcode
+            
             self.EX_MEM.valid = True
             self.ID_EX.valid = False
 
-        # Instruction Decode (ID) stage
-        if self.IF_ID.valid:
-            instruction = self.IF_ID.instruction
-            self.ID_EX.instruction = instruction
-            self.ID_EX.pc = self.IF_ID.pc
+    def MEM_stage(self):
+        if self.EX_MEM.valid:
+            instruction = self.EX_MEM.instruction
+            self.MEM_WB.instruction = instruction
+            self.MEM_WB.stage = "MEM"
 
-            opcode = instruction & 0x7F
-            rd = (instruction >> 7) & 0x1F
-            funct3 = (instruction >> 12) & 0x7
-            rs1 = (instruction >> 15) & 0x1F
-            rs2 = (instruction >> 20) & 0x1F
-            funct7 = (instruction >> 25) & 0x7F
-            imm = 0
+            if self.EX_MEM.opcode == 0x03:  # lw
+                address = self.EX_MEM.alu_result
+                self.MEM_WB.alu_result = int.from_bytes(self.memory[address:address+4], 'little')
+            elif self.EX_MEM.opcode == 0x23:  # sw
+                address = self.EX_MEM.alu_result
+                self.memory[address:address+4] = self.registers[self.EX_MEM.rs2].to_bytes(4, 'little')
+            else:
+                self.MEM_WB.alu_result = self.EX_MEM.alu_result
 
-            if opcode == 0x03:  # lw
-                imm = instruction >> 20
-            elif opcode == 0x23:  # sw
-                imm = ((instruction >> 25) << 5) | ((instruction >> 7) & 0x1F)
+            self.MEM_WB.rd = self.EX_MEM.rd
+            self.MEM_WB.opcode = self.EX_MEM.opcode
 
-            self.ID_EX.opcode = opcode
-            self.ID_EX.rd = rd
-            self.ID_EX.rs1 = rs1
-            self.ID_EX.rs2 = rs2
-            self.ID_EX.funct3 = funct3
-            self.ID_EX.funct7 = funct7
-            self.ID_EX.imm = imm
-            self.ID_EX.valid = True
-            self.IF_ID.valid = False
+            self.MEM_WB.valid = True
+            self.EX_MEM.valid = False
 
-        # Instruction Fetch (IF) stage
-        if self.pc < len(self.memory):
-            self.IF_ID.instruction = int.from_bytes(self.memory[self.pc:self.pc+4], 'little')
-            self.IF_ID.pc = self.pc
-            self.IF_ID.valid = True
-            self.pc += 4
+    def WB_stage(self):
+        if self.MEM_WB.valid:
+            self.WB.instruction = self.MEM_WB.instruction
+            self.WB.stage = "WB"
 
+            if self.MEM_WB.opcode == 0x03:  # lw
+                self.registers[self.MEM_WB.rd] = self.MEM_WB.alu_result
+            elif self.MEM_WB.opcode == 0x33:  # R-type (add, sub, mul)
+                self.registers[self.MEM_WB.rd] = self.MEM_WB.alu_result
 
-        # Return the state of the pipeline for debugging
-        return (
-            f"Cycle: {self.cycle}\n"
-            f"IF/ID: {self.IF_ID.instruction:08X}\n"
-            f"ID/EX: {self.ID_EX.instruction:08X}\n"
-            f"EX/MEM: {self.EX_MEM.instruction:08X}\n"
-            f"MEM/WB: {self.MEM_WB.instruction:08X}\n"
-        )
-
-    def stall_pipeline(self):
-        # Hold the IF/ID and ID/EX stages by copying their current contents
-        self.IF_ID.valid = False
-        self.ID_EX.valid = False
-        self.IF_ID.instruction = self.IF_ID.instruction
-        self.ID_EX.instruction = self.ID_EX.instruction
+            self.WB.valid = True
+            self.MEM_WB.valid = False
 
