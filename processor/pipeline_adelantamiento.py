@@ -1,20 +1,3 @@
-class ExecutionStatistics:
-    def __init__(self):
-        self.executions = []
-
-    def add_execution(self, num_cycles, num_instructions, cycle_time_ns):
-        cpi = num_cycles / num_instructions if num_instructions > 0 else float('inf')
-        execution_time_ns = num_cycles * cycle_time_ns
-        self.executions.append({
-            'num_cycles': num_cycles,
-            'num_instructions': num_instructions,
-            'cpi': cpi,
-            'execution_time_ns': execution_time_ns
-        })
-
-    def get_statistics(self):
-        return self.executions
-
 class PipelinedRegister:
     def __init__(self):
         self.instruction = 0
@@ -39,7 +22,6 @@ class Segmentado_Adelantamiento:
         self.halted = False  # To handle ebreak
         self.num_instructions = 0
         self.cycle_time_ns = 1  # Assuming 1 ns per cycle for simplicity
-        self.execution_stats = ExecutionStatistics()
 
         # Initialize pipeline registers
         self.IF_ID = PipelinedRegister()
@@ -219,8 +201,3 @@ class Segmentado_Adelantamiento:
 
         return wb_output
 
-    def record_statistics(self):
-        self.execution_stats.add_execution(self.cycle, self.num_instructions, self.cycle_time_ns)
-
-    def get_execution_statistics(self):
-        return self.execution_stats.get_statistics()
