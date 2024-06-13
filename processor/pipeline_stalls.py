@@ -49,12 +49,15 @@ class Segmentado_Stalls:
 
     def run(self):
         output = ""
-        while self.cycle < len(self.memory):
+        while self.is_pipeline_active() == True:
             output += self.step()
         return output
 
     def is_pipeline_active(self):
-        return self.IF_ID.valid or self.ID_EX.valid or self.EX_MEM.valid or self.MEM_WB.valid or self.WB.valid
+        if self.IF_ID.valid == True or self.ID_EX.valid == True or self.EX_MEM.valid == True or self.MEM_WB.valid == True or self.WB.valid == True:
+            return True
+        else:
+            return False
     
     #Calculadora CPI
     def CPI_counter(self):
@@ -114,6 +117,14 @@ class Segmentado_Stalls:
         
         cpi = self.CPI_counter()
         self.check_stall()
+
+        if self.IF_ID.instruction == 0 and self.ID_EX.instruction == 0 and self.EX_MEM.instruction == 0 and self.MEM_WB.instruction == 0 and self.WB.instruction == 0:
+            self.IF_ID.valid = False
+            self.ID_EX.valid = False
+            self.EX_MEM.valid = False
+            self.MEM_WB.valid = False
+            self.WB.valid = False
+
 
         if self.stall == False:
             return (

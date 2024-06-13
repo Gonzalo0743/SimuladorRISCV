@@ -65,7 +65,7 @@ class MainWindow:
 
     def open_pipeline_stalls(self):
         pipeline_stalls_window = tk.Toplevel(self.master)
-        Segmentado_Adelantamiento_Window(pipeline_stalls_window)
+        Segmentado_Stalls_Window(pipeline_stalls_window)
 
     def open_pipeline_adelantamiento(self):
         pipeline_adelantamiento_window = tk.Toplevel(self.master)
